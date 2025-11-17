@@ -27,6 +27,14 @@ public class ItemSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     private TextMeshProUGUI dragCountTMP;        // wenn TMP verfügbar
 
     private bool isInitialized;
+    private static void NotifyOwnerChanged(ItemSlotUI slot)
+    {
+        if (slot == null) return;
+        if (slot.owner == OwnerType.Inventory)
+            slot.inventory?.RaiseChanged();
+        else if (slot.owner == OwnerType.Crafting)
+            slot.craftingGrid?.RaiseChanged();
+    }
 
     public ItemStack Stack
     {
@@ -211,6 +219,8 @@ public void OnDrop(PointerEventData eventData)
             Inventory.MoveQuantity(from, to, qty);
             source.Refresh();
             Refresh();
+            NotifyOwnerChanged(source);
+            NotifyOwnerChanged(this);
             HideAllDropHints();
             return;
         }
@@ -226,6 +236,8 @@ public void OnDrop(PointerEventData eventData)
             Inventory.Swap(to, from);
             source.Refresh();
             Refresh();
+            NotifyOwnerChanged(source);
+            NotifyOwnerChanged(this);
             HideAllDropHints();
             return;
         }

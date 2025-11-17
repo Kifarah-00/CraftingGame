@@ -13,6 +13,8 @@ public class CraftingManager : MonoBehaviour
     [SerializeField] private InventoryUI inventoryUI;
     [SerializeField] private CraftingGridUI craftingGridUI;
 
+    enum CraftAttemptResult { Success, NoRecipe, InventoryFull, Error }
+
     private void OnEnable()
     {
         if (inventory != null) inventory.OnChanged += ForceUIRefresh;
@@ -35,29 +37,47 @@ public class CraftingManager : MonoBehaviour
     // Button-Handler (OnClick -> CraftingManager.Craft)
     public void Craft()
     {
-        if (!TryCraftOnce())
+        var result = TryCraftOnce(out Item craftedItem, out int craftedAmount);
+        switch (result)
         {
-            Debug.Log("[CraftingManager] Kein passendes Rezept / nicht genug Ressourcen / kein Platz.");
-        }
-        else
-        {
-            Debug.Log("Crafting erfolgreich!");
-            // pulse button
-            var btn = UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;
-            if (btn)
-            {
-                var juice = btn.GetComponent<ButtonJuice>();
-                if (juice) juice.PulseSuccess();
-            }
+            case CraftAttemptResult.Success:
+                Debug.Log("Crafting erfolgreich!");
+                var btn = UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;
+                if (btn)
+                {
+                    var juice = btn.GetComponent<ButtonJuice>();
+                    if (juice) juice.PulseSuccess();
+                }
+                {
+                    string name = craftedItem ? craftedItem.DisplayName : "Item";
+                    ToastSystem.Success("Gecraftet!", $"{craftedAmount}× {name}", key:"craft_ok");
+                }
+                break;
+            case CraftAttemptResult.InventoryFull:
+                ToastSystem.Error("Kein Platz im Inventar", "Räume einen Slot frei.", key:"inv_full");
+                Debug.Log("[CraftingManager] Kein Platz im Inventar.");
+                break;
+            case CraftAttemptResult.NoRecipe:
+                ToastSystem.Warning("Unbekanntes Rezept", "Kombination ergibt nichts.", key:"craft_unknown");
+                Debug.Log("[CraftingManager] Kein passendes Rezept.");
+                break;
+            default:
+                Debug.Log("[CraftingManager] Crafting fehlgeschlagen.");
+                break;
         }
 
         // Sicherheitshalber UI immer refreshen (auch wenn TryCraftOnce intern Events raised)
         ForceUIRefresh();
     }
 
-    private bool TryCraftOnce()
+    private CraftAttemptResult TryCraftOnce(out Item craftedItem, out int craftedAmount)
     {
-        if (!inventory || !grid || recipes == null || recipes.Count == 0) return false;
+        craftedItem = null;
+        craftedAmount = 0;
+        if (!inventory || !grid || recipes == null || recipes.Count == 0) return CraftAttemptResult.Error;
+
+        bool matchedRecipe = false;
+        bool blockedBySpace = false;
 
         foreach (var r in recipes)
         {
@@ -65,6 +85,7 @@ public class CraftingManager : MonoBehaviour
 
             // 1) Form + Bedarf ermitteln (shaped; Typen müssen passen, Menge egal; Bedarf je Item summieren)
             if (!ComputeNeedsIfShapeMatches(r, out var needsPerItem)) continue;
+            matchedRecipe = true;
 
             // 2) SIMULATION auf Kopien von Inventar + Grid
             // --- Inventar kopieren
@@ -154,6 +175,7 @@ public class CraftingManager : MonoBehaviour
             if (newStacksNeeded > emptyNow + freedSlotsByConsumption)
             {
                 // nicht genug Slots, selbst nach Verbrauch
+                blockedBySpace = true;
                 goto NextRecipe;
             }
 
@@ -186,7 +208,7 @@ public class CraftingManager : MonoBehaviour
                 {
                     Debug.LogWarning($"[CraftingManager] Unerwartet: Bedarf {item?.name} nicht gedeckt.");
                     grid.RaiseChanged();
-                    return false;
+                    return CraftAttemptResult.Error;
                 }
             }
 
@@ -196,7 +218,7 @@ public class CraftingManager : MonoBehaviour
             {
                 Debug.LogWarning("[CraftingManager] Unerwartet kein Platz für Output nach erfolgreicher Simulation.");
                 grid.RaiseChanged();
-                return false;
+                return CraftAttemptResult.InventoryFull;
             }
 
             // 3c) Output-Highlight im UI (erstes passendes Inventar-Slot blinken)
@@ -222,13 +244,16 @@ public class CraftingManager : MonoBehaviour
 
             // 3d) UI refresh (Inventory.Add feuert OnChanged; Grid manuell)
             grid.RaiseChanged();
-            return true;
+            craftedItem = r.outputItem;
+            craftedAmount = r.outputAmount;
+            return CraftAttemptResult.Success;
 
             // label für "continue outer foreach"
             NextRecipe: ;
         }
 
-        return false;
+        if (blockedBySpace) return CraftAttemptResult.InventoryFull;
+        return matchedRecipe ? CraftAttemptResult.Error : CraftAttemptResult.NoRecipe;
     }
 
     /// Ermittelt Bedarf je Item, wenn die Form passt (shaped).

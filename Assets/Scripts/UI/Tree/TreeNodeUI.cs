@@ -1,8 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
-public class TreeNodeUI : MonoBehaviour
+public class TreeNodeUI : MonoBehaviour, IPointerClickHandler
 {
     [Header("Refs")]
     public Image icon;
@@ -30,5 +31,20 @@ public class TreeNodeUI : MonoBehaviour
     void OnClick()
     {
         if (controller) controller.ToggleQueue(def);
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (!controller || controller.state == null || def == null) return;
+        var st = controller.state;
+        bool unlocked = st.IsUnlocked(def.id);
+        bool queued = st.IsQueued(def.id);
+        if (unlocked || queued) return;
+
+        bool prereqsMet = controller.ArePrereqsMet(def, considerQueued:true);
+        if (!prereqsMet) return;
+
+        int available = st.GetAvailablePoints(controller.CostOf);
+        if (available < def.cost) controller.NotifyInsufficientPoints();
     }
 }

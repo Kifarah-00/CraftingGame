@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0b677f5c3f3d3742a9e6122afd24446, type: 3}
   m_Name: SkillTreeState
   m_EditorClassIdentifier: 
-  points: 10
-  unlockedIds: []
-  queuedIds:
+  points: 0
+  unlockedIds:
   - skill1
+  queuedIds: []

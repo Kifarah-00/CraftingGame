@@ -364,9 +364,9 @@
     <Compile Include="Library\PackageCache\com.unity.visualscripting@6279e2b7c485\Editor\VisualScripting.Core\Plugins\PluginModuleDependencyAttribute.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@6279e2b7c485\Editor\VisualScripting.Core\Inspection\IndividualEditor.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@6279e2b7c485\Editor\VisualScripting.Core\Utilities\PackageVersionUtility.cs" />
-    <Compile Include="Library\PackageCache\com.unity.visualscripting@6279e2b7c485\Editor\VisualScripting.Core\Inspection\GraphEditor.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@6279e2b7c485\Editor\VisualScripting.Core\Inspection\Unity\Ray2DInspector.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@6279e2b7c485\Editor\VisualScripting.Core\Description\GraphNesterDescriptor.cs" />
+    <Compile Include="Library\PackageCache\com.unity.visualscripting@6279e2b7c485\Editor\VisualScripting.Core\Inspection\GraphEditor.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@6279e2b7c485\Editor\VisualScripting.Core\Platforms\EditorPlatformUtility.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@6279e2b7c485\Editor\VisualScripting.Core\Plugins\PluginSavedVersionMigration.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@6279e2b7c485\Editor\VisualScripting.Core\Widgets\Nodes\NodeWidget.cs" />

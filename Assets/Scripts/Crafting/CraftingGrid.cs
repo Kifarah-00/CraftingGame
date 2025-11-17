@@ -7,8 +7,11 @@ public class CraftingGrid : MonoBehaviour
 
     [SerializeField] private ItemStack[] cells = new ItemStack[Width * Height];
 
-    public ItemStack GetCell(int index) => cells[index];
-    public ItemStack GetCell(int x, int y) => cells[y * Width + x];
+    public int SlotCount => cells.Length;
+    public ItemStack GetSlot(int index) => cells[index];
+    public ItemStack GetSlot(int x, int y) => cells[y * Width + x];
+    public ItemStack GetCell(int index) => GetSlot(index);
+    public ItemStack GetCell(int x, int y) => GetSlot(x, y);
     public event System.Action OnChanged;
 public void RaiseChanged() => OnChanged?.Invoke();
 

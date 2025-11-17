@@ -17,8 +17,18 @@ public class Inventory : MonoBehaviour
 
     public IReadOnlyList<ItemStack> Slots => slots;
     public event System.Action OnChanged;
+    private bool suppressEvents;
+    public void RaiseChanged() => NotifyChanged();
+
+    void NotifyChanged()
+    {
+        if (suppressEvents) return;
+        OnChanged?.Invoke();
+    }
 private void Awake()
 {
+    suppressEvents = true;
+    bool seeded = false;
     // Slots initialisieren
     for (int i = slots.Count; i < capacity; i++) slots.Add(new ItemStack());
 
@@ -26,8 +36,13 @@ private void Awake()
     foreach (var s in startItems)
     {
         if (s?.item != null && s.amount > 0)
-            Add(s.item, s.amount);   // packt ins Inventar
+        {
+            Add(s.item, s.amount, notify:false);   // packt ins Inventar
+            seeded = true;
+        }
     }
+    suppressEvents = false;
+    if (seeded) RaiseChanged();
 }
 
 // ENTFERNE (oder leere) das alte Start():
@@ -57,7 +72,7 @@ public int RemoveUpTo(Item item, int amount)
         if (st.Amount <= 0) st.Clear();
     }
     int removed = amount - remaining;
-    if (removed > 0) OnChanged?.Invoke();
+    if (removed > 0) NotifyChanged();
     return removed;
 }
 
@@ -92,7 +107,7 @@ public int RemoveUpTo(Item item, int amount)
     }
 
     /// <summary>Gibt zurück, wie viel NICHT einsortiert werden konnte.</summary>
-    public int Add(Item item, int amount)
+    public int Add(Item item, int amount, bool notify = true)
     {
         if (item == null || amount <= 0) return amount;
             int remaining = amount;
@@ -121,8 +136,18 @@ public int RemoveUpTo(Item item, int amount)
             }
         }
         int added = amount - remaining;
-        if (added > 0) OnChanged?.Invoke();
+        if (added > 0 && notify) NotifyChanged();
         return remaining;
+    }
+
+    public bool TryAdd(Item item, int amount)
+    {
+        if (item == null || amount <= 0) return false;
+        int remaining = Add(item, amount);
+        bool success = remaining <= 0;
+        if (!success) ToastSystem.Error("Inventar voll");
+        else ToastSystem.Info("Hinzugefügt", $"{amount}× {item.DisplayName}");
+        return success;
     }
 
     public bool Remove(Item item, int amount)
@@ -145,7 +170,7 @@ public int RemoveUpTo(Item item, int amount)
             remaining -= take;
             if (st.Amount <= 0) st.Clear();
         }
-        OnChanged?.Invoke();
+        NotifyChanged();
         return true;
     }
 

@@ -26,6 +26,9 @@ public class TreePanelController : MonoBehaviour
     public float maxZoom = 1.6f;
     public float zoomStep = 0.1f;
 
+    public event System.Action OnInsufficientPoints;
+    public void NotifyInsufficientPoints() => OnInsufficientPoints?.Invoke();
+
     readonly Dictionary<string, TreeNodeUI> uiById = new();
     readonly List<Image> edgeImages = new();
     bool builtOnce = false;
@@ -88,6 +91,13 @@ public class TreePanelController : MonoBehaviour
         if (state == null || def == null) return;
         if (state.IsQueued(def.id)) state.Unqueue(def.id);
         else if (CanQueue(def)) state.QueueUnlock(def.id);
+        else
+        {
+            bool prereqsOk = ArePrereqsMet(def, considerQueued:true);
+            bool lacksPoints = prereqsOk && !state.IsUnlocked(def.id) && !state.IsQueued(def.id)
+                               && state.GetAvailablePoints(CostOf) < def.cost;
+            if (lacksPoints) NotifyInsufficientPoints();
+        }
         RefreshAll();
     }
 
